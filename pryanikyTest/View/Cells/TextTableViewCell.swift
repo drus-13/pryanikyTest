@@ -42,4 +42,8 @@ final class TextTableViewCell: UITableViewCell {
     func setCellTitle(_ title: String) {
         titleLabel.text = title
     }
+    
+    func setCellBackgroundColour(colour: UIColor) {
+        self.backgroundColor = colour
+    }
 }

@@ -96,9 +96,9 @@ class MainViewController: UIViewController {
             cell.setCellTitle(text)
         case "selector":
             let cell = requestTableView.cellForRow(at: IndexPath(row: row, section: 0)) as! SelectorTableViewCell
-            guard let variants = data.data.variants else { return }
+            let selectorData = data.data
             
-            cell.setVariants(variants)
+            cell.setSelectorData(selectorData)
         case "picture":
             let cell = requestTableView.cellForRow(at: IndexPath(row: row, section: 0)) as! ImageTableViewCell
             guard let text = data.data.text else { return }
@@ -122,8 +122,10 @@ class MainViewController: UIViewController {
 // MARK: - Selector Table View Cell Delegate
 extension MainViewController: SelectorTableViewCellDelegate {
     
-    func getVariantsCount() -> Int {
-        return viewModel.getVariantsCount()
+    func getSelectorData() -> SomeData? {
+        guard let selectorData = viewModel.getSelectorData() else { return nil }
+        
+        return selectorData
     }
     
     func selectorCellDidSelected(selectedID: Int) {

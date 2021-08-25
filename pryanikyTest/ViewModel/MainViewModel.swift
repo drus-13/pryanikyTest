@@ -12,7 +12,7 @@ import Alamofire
 protocol MainViewModelProtocol {
     func getViewType(index: Int) -> String
     func getViewsCount() -> Int
-    func getVariantsCount() -> Int
+    func getSelectorData() -> SomeData?
     func fetchData()
     func fetchImage()
     var updateTableView: (() -> Void)? { get set }
@@ -81,6 +81,26 @@ class MainViewModel: MainViewModelProtocol {
         }
     }
     
+    // MARK: - Find Index In Data
+    private func findIndexInData(name: String) -> Int? {
+        for (index, responseData) in data.enumerated() {
+            if responseData.name == name {
+                return index
+            }
+        }
+        return nil
+    }
+    
+    // MARK: - Find Index In View
+    private func findIndexInView(name: String) -> Int? {
+        for (index, responseName) in requestView.enumerated() {
+            if responseName == name {
+                return index
+            }
+        }
+        return nil
+    }
+    
     // MARK: - Fetch Data
     func fetchData() {
         guard let dataURL = URL(string: Constants.url) else { return }
@@ -101,7 +121,8 @@ class MainViewModel: MainViewModelProtocol {
     
     // MARK: - Fetch Image
     func fetchImage() {
-        guard let imageURLString = data[1].data.url, let imageURL = URL(string: imageURLString) else { return }
+        guard let imageIndex = findIndexInData(name: "picture"), let imageURLString = data[imageIndex].data.url,
+              let imageURL = URL(string: imageURLString) else { return }
         
         networkService.requestImage(url: imageURL) { [weak self] response in
             guard let self = self else { return }
@@ -128,10 +149,12 @@ class MainViewModel: MainViewModelProtocol {
     }
     
     // MARK: - Get Variants Count
-    func getVariantsCount() -> Int {
-        guard let count = data[2].data.variants?.count else { return 0 }
+    func getSelectorData() -> SomeData? {
+        guard let selectorIndex = findIndexInData(name: "selector") else { return nil }
         
-        return count
+        let selectorData = data[selectorIndex].data
+
+        return selectorData
     }
     
     // MARK: - Selected Cell
@@ -159,10 +182,12 @@ class MainViewModel: MainViewModelProtocol {
     
     // MARK: - Selected Selector Cell
     func selectorCellDidSelected(for row: Int) {
-        guard let responseData = getResponseData(for: requestView[1]) else { return }
+        guard let selectorIndex = findIndexInView(name: "selector") else { return }
         
+        guard let responseData = getResponseData(for: requestView[selectorIndex]) else { return }
+
         guard let description = responseData.data.variants?[row].text else { return }
-        
+
         showAlert?("selector", description)
     }
 }
