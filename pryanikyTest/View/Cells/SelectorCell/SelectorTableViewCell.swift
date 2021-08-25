@@ -9,12 +9,25 @@ import UIKit
 
 protocol SelectorTableViewCellDelegate: AnyObject {
     func selectorCellDidSelected(selectedID: Int)
-    func getVariantsCount() -> Int
+    func getSelectorData() -> SomeData?
 }
 
 class SelectorTableViewCell: UITableViewCell {
     // MARK: - Identifier
     static let identifier: String = "SelectorTableViewCell"
+    
+    // MARK: - Private Properties
+    private var checkedCellIndexPath: IndexPath?
+    private var selectorData: SomeData? {
+        didSet {
+            guard let index = selectorData?.selectedId else { return }
+
+            checkedCellIndexPath = IndexPath(row: index, section: 0)
+        }
+    }
+    
+    private let checkedColour: UIColor = .green
+    private let uncheckedColour: UIColor = .white
     
     // MARK: - TableView
     private lazy var tableView: UITableView = {
@@ -56,10 +69,29 @@ class SelectorTableViewCell: UITableViewCell {
         tableView.bottomAnchor.constraint(equalTo: bottomAnchor).isActive = true
     }
     
+    // MARK: - Get Selector Data
+    private func getSelectorData() {
+        selectorData = delegate?.getSelectorData()
+    }
+    
+    // MARK: - Check Index
+    private func checkIndex(_ index: Int, for cell: TextTableViewCell) {
+        if index == checkedCellIndexPath?.row {
+            cell.setCellBackgroundColour(colour: checkedColour)
+            checkedCellIndexPath = IndexPath(row: index, section: 0)
+        } else {
+            cell.setCellBackgroundColour(colour: uncheckedColour)
+        }
+    }
+    
     // MARK: - Set Variants
-    func setVariants(_ variants: [Variant]) {
-        variants.enumerated().forEach { (index, result) in
+    func setSelectorData(_ selectorData: SomeData) {
+        self.selectorData = selectorData
+        
+        selectorData.variants?.enumerated().forEach { (index, result) in
             let cell = tableView.cellForRow(at: IndexPath(row: index, section: 0)) as! TextTableViewCell
+            
+            checkIndex(index, for: cell)
             
             cell.setCellTitle(result.text)
         }
@@ -70,16 +102,22 @@ class SelectorTableViewCell: UITableViewCell {
 extension SelectorTableViewCell: UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return Constants.MainCellSize.selectorCellHeight / 3
+        guard let variantsCount = delegate?.getSelectorData()?.variants?.count else {
+            return Constants.MainCellSize.selectorCellHeight
+        }
+        
+        return Constants.MainCellSize.selectorCellHeight / CGFloat(variantsCount)
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return delegate?.getVariantsCount() ?? 0
+        return delegate?.getSelectorData()?.variants?.count ?? 0
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: TextTableViewCell.identifier,
                                                  for: indexPath) as! TextTableViewCell
+        
+        checkIndex(indexPath.row, for: cell)
         
         return cell
     }
@@ -89,8 +127,20 @@ extension SelectorTableViewCell: UITableViewDataSource {
 extension SelectorTableViewCell: UITableViewDelegate {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        guard let previousIndexPath = checkedCellIndexPath else { return }
+        
+        let previousCell = tableView.cellForRow(at: previousIndexPath) as! TextTableViewCell
+        
+        previousCell.setCellBackgroundColour(colour: uncheckedColour)
+        
+        let cell = tableView.cellForRow(at: indexPath) as! TextTableViewCell
+        
+        cell.setCellBackgroundColour(colour: checkedColour)
+        
         tableView.deselectRow(at: indexPath, animated: true)
         
+        
         delegate?.selectorCellDidSelected(selectedID: indexPath.row)
+        checkedCellIndexPath = indexPath
     }
 }
